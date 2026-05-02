@@ -1,0 +1,48 @@
+{
+  "name": "football-pipeline-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Fastify backend orchestrating the football-pipeline",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
+    "lint": "eslint . --ext .ts",
+    "format": "prettier --write \"src/**/*.{ts,json}\"",
+    "typecheck": "tsc --noEmit",
+    "test:s3": "tsx scripts/test-s3.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.677.0",
+    "@aws-sdk/s3-request-presigner": "^3.677.0",
+    "@fastify/cors": "^10.0.1",
+    "@fastify/jwt": "^9.0.1",
+    "@fastify/multipart": "^9.0.1",
+    "axios": "^1.7.7",
+    "bcrypt": "^5.1.1",
+    "bullmq": "^5.21.0",
+    "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.36.0",
+    "fastify": "^5.0.0",
+    "ioredis": "^5.4.1",
+    "pino": "^9.4.0",
+    "pino-pretty": "^11.3.0",
+    "postgres": "^3.4.4",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/node": "^22.7.5",
+    "@typescript-eslint/eslint-plugin": "^8.10.0",
+    "@typescript-eslint/parser": "^8.10.0",
+    "drizzle-kit": "^0.27.0",
+    "eslint": "^9.13.0",
+    "prettier": "^3.3.3",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.3"
+  }
+}

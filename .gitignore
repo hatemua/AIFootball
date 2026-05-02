@@ -1,0 +1,72 @@
+# ──────────────────────────────────────────────────────────────────
+# football-pipeline — combined .gitignore for Node + Python services
+# ──────────────────────────────────────────────────────────────────
+
+# ── Node / TypeScript ────────────────────────────────────────────
+node_modules/
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+.npm/
+.yarn/
+.pnpm-store/
+.eslintcache
+
+# ── Python ───────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.coverage
+htmlcov/
+
+# ── Environment / secrets ────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+cookies.txt
+*.pem
+*.key
+
+# ── Media (NEVER commit videos) ──────────────────────────────────
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+
+# ── ML model weights & YOLO outputs ──────────────────────────────
+*.pt
+*.onnx
+*.engine
+runs/
+weights/
+
+# ── Service-local artifacts ──────────────────────────────────────
+/uploads/
+/outputs/
+**/uploads/
+**/outputs/
+
+# ── OS / editor cruft ────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Logs ─────────────────────────────────────────────────────────
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
