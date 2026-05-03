@@ -36,6 +36,7 @@ class FootballPipeline:
         if self.is_loaded:
             return
         from ultralytics import YOLO
+        import torch
 
         logger.info("Loading YOLO model from: %s", self.model_name)
         if not Path(self.model_name).is_absolute():
@@ -47,7 +48,13 @@ class FootballPipeline:
                 resolved,
             )
         self._model = YOLO(self.model_name)
-        logger.info("YOLO model loaded")
+
+        if torch.cuda.is_available():
+            self._model.to("cuda")
+            device_name = torch.cuda.get_device_name(0)
+            logger.info("YOLO model loaded on GPU: %s", device_name)
+        else:
+            logger.warning("CUDA not available — YOLO will run on CPU (very slow)")
 
     def process(
         self,
@@ -97,6 +104,8 @@ class FootballPipeline:
             name=run_name,
             stream=True,                # memory-safe for long videos
             verbose=False,
+            device=0,                   # explicit GPU device
+            half=True,                  # FP16 inference, ~2x faster on T4
         )
 
         for frame_idx, result in enumerate(results):
