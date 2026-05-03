@@ -70,6 +70,18 @@ Response shape:
 }
 ```
 
+## Pre-deployment setup
+
+Before starting the service, download the YOLO model weights:
+
+```bash
+./scripts/download_models.sh
+```
+
+This downloads `yolo11n.pt` (~5.4 MB) into `./weights/`. The path must match `YOLO_MODEL` in your `.env`.
+
+For production, always use an absolute path in `YOLO_MODEL` so the service finds the model regardless of the working directory.
+
 ## Local development
 
 ```bash
@@ -78,6 +90,7 @@ source .venv/bin/activate     # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
 cp .env.example .env
+./scripts/download_models.sh   # one-time, fetches yolo11n.pt into ./weights/
 
 uvicorn src.api:app --reload  # http://localhost:8000
 # Health check:
@@ -90,7 +103,6 @@ See `.env.example`. All vars are read by `src/config.py` via `pydantic-settings`
 
 | Var                         | Default                  | Purpose                                        |
 |-----------------------------|--------------------------|------------------------------------------------|
-| `MODEL_PATH`                | `./weights/yolo.pt`      | (Legacy) YOLO weights file path                |
 | `STORAGE_DIR`               | `./storage`              | Working dir for downloads                      |
 | `BACKEND_CALLBACK_BASE_URL` | `http://localhost:3001`  | Where job-complete callbacks go                |
 | `LOG_LEVEL`                 | `INFO`                   | Python logging level                           |
@@ -107,8 +119,8 @@ See `.env.example`. All vars are read by `src/config.py` via `pydantic-settings`
 
 1. Build & push: `docker build -t <registry>/football-gpu-server .` then push.
 2. Create a RunPod **GPU Pod template** pointing at your image. Expose port 8000.
-3. Set env vars (`MODEL_PATH`, `BACKEND_CALLBACK_BASE_URL` etc.).
-4. Mount or bake in your YOLO weights at the configured `MODEL_PATH`.
+3. Set env vars (`YOLO_MODEL`, `BACKEND_CALLBACK_BASE_URL` etc.).
+4. Mount or bake in your YOLO weights at the configured `YOLO_MODEL` path.
 5. Note the pod's public URL — set it as `GPU_SERVER_URL` in the backend's env.
 
 ## What's still TODO

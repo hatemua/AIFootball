@@ -37,7 +37,15 @@ class FootballPipeline:
             return
         from ultralytics import YOLO
 
-        logger.info("Loading YOLO model %s", self.model_name)
+        logger.info("Loading YOLO model from: %s", self.model_name)
+        if not Path(self.model_name).is_absolute():
+            resolved = Path(self.model_name).resolve()
+            logger.warning(
+                "YOLO_MODEL is a relative path. Resolved to %s. "
+                "Use an absolute path in production so the service finds the "
+                "weights regardless of the working directory.",
+                resolved,
+            )
         self._model = YOLO(self.model_name)
         logger.info("YOLO model loaded")
 

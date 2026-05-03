@@ -16,7 +16,6 @@ class Settings(BaseSettings):
         protected_namespaces=("settings_",),
     )
 
-    model_path: Path = Field(default=Path("./weights/yolo.pt"), alias="MODEL_PATH")
     storage_dir: Path = Field(default=Path("./storage"), alias="STORAGE_DIR")
     backend_callback_base_url: str = Field(
         default="http://localhost:3001", alias="BACKEND_CALLBACK_BASE_URL"
@@ -30,8 +29,17 @@ class Settings(BaseSettings):
 
     cookies_path: str | None = Field(default=None, alias="COOKIES_PATH")
     temp_dir: Path = Field(default=Path("/tmp"), alias="TEMP_DIR")
-    yolo_model: str = Field(default="yolo11n.pt", alias="YOLO_MODEL")
-    yolo_confidence: float = Field(default=0.3, alias="YOLO_CONFIDENCE")
+    yolo_model: str = Field(
+        default="yolo11n.pt",
+        alias="YOLO_MODEL",
+        description="Path to YOLO weights file. Use absolute path for production.",
+    )
+    yolo_confidence: float = Field(
+        default=0.3,
+        alias="YOLO_CONFIDENCE",
+        ge=0.0,
+        le=1.0,
+    )
 
 
 settings = Settings()
