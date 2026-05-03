@@ -8,19 +8,65 @@ Runs on **RunPod** in production. Locally, you can run it on CPU (slow) or any C
 
 | Method | Path                | Purpose                                          |
 |--------|---------------------|--------------------------------------------------|
-| GET    | `/health`           | Reports GPU + model status                       |
+| GET    | `/health`           | Reports GPU + model + PyTorch info               |
+| GET    | `/health/s3`        | Verifies S3 reachability                         |
 | POST   | `/process`          | Async: enqueue, returns `{ job_id, status }`     |
 | GET    | `/jobs/{job_id}`    | Poll job status                                  |
-| POST   | `/process-sync`     | Synchronous (small clips / testing only)         |
+| POST   | `/process-sync`     | Synchronous end-to-end pipeline                  |
 
-`POST /process` body (`ProcessRequest` in `src/models.py`):
+`POST /process-sync` and `POST /process` body (`ProcessRequest` in `src/models.py`):
 
 ```json
 {
   "match_id": "uuid-from-backend",
-  "youtube_url": "https://youtu.be/...",   // OR video_path, not both
-  "video_path": null,
+  "youtube_url": "https://youtu.be/...",       // exactly one of these three
+  "video_url":   "https://example.com/x.mp4",
+  "video_path":  "/abs/path/to/local.mp4",
   "callback_url": "https://backend/api/webhooks/gpu/job-complete"
+}
+```
+
+## Testing /process-sync
+
+End-to-end smoke test (download → S3 → YOLO+ByteTrack → S3 → signed URLs).
+
+```bash
+# Direct MP4 (no cookies needed — easiest)
+curl -X POST http://localhost:8000/process-sync \
+  -H "Content-Type: application/json" \
+  -d '{
+    "match_id": "smoke-001",
+    "video_url": "https://media.roboflow.com/supervision/video-examples/croatia-chile-world-cup-2014.mp4"
+  }'
+
+# YouTube (requires COOKIES_PATH pointing at a Netscape-format cookies.txt
+# exported from a logged-in browser via the "Get cookies.txt" extension)
+curl -X POST http://localhost:8000/process-sync \
+  -H "Content-Type: application/json" \
+  -d '{
+    "match_id": "smoke-002",
+    "youtube_url": "https://www.youtube.com/watch?v=__P_wgqL2lM"
+  }'
+
+# Verify S3 artifacts landed
+aws s3 ls s3://${S3_BUCKET}/inputs/smoke-001/
+aws s3 ls s3://${S3_BUCKET}/outputs/smoke-001/
+```
+
+Response shape:
+
+```json
+{
+  "match_id": "smoke-001",
+  "status": "completed",
+  "s3_keys": {
+    "raw_video": "inputs/smoke-001/raw.mp4",
+    "annotated_video": "outputs/smoke-001/annotated.mp4",
+    "tracking_data":  "outputs/smoke-001/tracking.json"
+  },
+  "signed_urls": { "raw_video": "https://...", "annotated_video": "https://...", "tracking_data": "https://..." },
+  "stats": { "total_frames": 1234, "unique_track_ids": 23, "realtime_factor": 1.6, "...": "..." },
+  "processing_time_seconds": 47.3
 }
 ```
 
@@ -42,12 +88,20 @@ curl http://localhost:8000/health
 
 See `.env.example`. All vars are read by `src/config.py` via `pydantic-settings`.
 
-| Var                         | Default                  | Purpose                          |
-|-----------------------------|--------------------------|----------------------------------|
-| `MODEL_PATH`                | `./weights/yolo.pt`      | YOLO weights file                |
-| `STORAGE_DIR`               | `./storage`              | Working dir for downloads        |
-| `BACKEND_CALLBACK_BASE_URL` | `http://localhost:3001`  | Where job-complete callbacks go  |
-| `LOG_LEVEL`                 | `INFO`                   | Python logging level             |
+| Var                         | Default                  | Purpose                                        |
+|-----------------------------|--------------------------|------------------------------------------------|
+| `MODEL_PATH`                | `./weights/yolo.pt`      | (Legacy) YOLO weights file path                |
+| `STORAGE_DIR`               | `./storage`              | Working dir for downloads                      |
+| `BACKEND_CALLBACK_BASE_URL` | `http://localhost:3001`  | Where job-complete callbacks go                |
+| `LOG_LEVEL`                 | `INFO`                   | Python logging level                           |
+| `AWS_ACCESS_KEY_ID`         | —                        | S3 credentials (required)                      |
+| `AWS_SECRET_ACCESS_KEY`     | —                        | S3 credentials (required)                      |
+| `AWS_DEFAULT_REGION`        | `eu-central-1`           | AWS region                                     |
+| `S3_BUCKET`                 | —                        | Bucket for inputs/outputs/reports (required)   |
+| `COOKIES_PATH`              | (none)                   | Netscape cookies.txt for yt-dlp YouTube auth   |
+| `TEMP_DIR`                  | `/tmp`                   | Per-job working directory                      |
+| `YOLO_MODEL`                | `yolo11n.pt`             | Ultralytics model name (auto-downloads)        |
+| `YOLO_CONFIDENCE`           | `0.3`                    | Detection confidence threshold (0.0–1.0)       |
 
 ## Deploy to RunPod
 
@@ -59,11 +113,13 @@ See `.env.example`. All vars are read by `src/config.py` via `pydantic-settings`
 
 ## What's still TODO
 
-- [ ] `src/pipeline.py` — actual YOLO + ByteTrack loop
-- [ ] `src/youtube.py` — yt-dlp download
-- [ ] `src/api.py` — background task that runs the pipeline and POSTs the callback
+- [x] `src/pipeline.py` — YOLO + ByteTrack loop with ffmpeg re-encode
+- [x] `src/youtube.py` — multi-source downloader (yt-dlp + direct HTTP via httpx)
+- [x] `src/api.py` — `/process-sync` end-to-end with S3 upload + signed URLs
+- [ ] `src/api.py` — background task for `/process` (async) that POSTs `callback_url`
 - [ ] Real job persistence (currently an in-memory dict — lost on restart)
-- [ ] Tests beyond the smoke-test placeholder
+- [ ] Event extraction (passes, shots, sprints, possession) on top of the raw tracking_data
+- [ ] Tests beyond the storage round-trip + pipeline placeholder
 
 ## Code style
 

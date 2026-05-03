@@ -1,18 +1,19 @@
-"""Placeholder pytest module. Real tests TODO."""
+"""Placeholder pytest module for FootballPipeline.
 
-from pathlib import Path
-
-import pytest
+Real end-to-end behavior is exercised by hitting POST /process-sync — those
+tests need a GPU + a real video and live in the integration suite (TODO).
+"""
 
 from src.pipeline import FootballPipeline
 
 
 def test_pipeline_initially_unloaded() -> None:
-    p = FootballPipeline(Path("./weights/yolo.pt"))
+    p = FootballPipeline(model_name="yolo11n.pt", confidence=0.3)
     assert p.is_loaded is False
 
 
-def test_pipeline_run_raises_not_implemented(tmp_path: Path) -> None:
-    p = FootballPipeline(Path("./weights/yolo.pt"))
-    with pytest.raises(NotImplementedError):
-        p.run(tmp_path / "fake.mp4", match_id="test-match")
+def test_pipeline_constructor_defaults() -> None:
+    p = FootballPipeline()
+    assert p.model_name == "yolo11n.pt"
+    assert p.confidence == 0.3
+    assert p.is_loaded is False
